@@ -55,12 +55,12 @@ async function queryDocIcon(block_id) {
 
     // 默认文档图标
     if (icon_code === "") {
-        let code = sub_file_cnt > 0 ? '📑' : '📄';
-        let dom = `<span data-type="text" class="${ICON_CLASS}">${code}</span>`
+        let iconName = sub_file_cnt > 0 ? '#iconFolder' : '#iconFile';
+        let dom = `<svg class="${ICON_CLASS}" style="height: 1em; width: 1em; margin-right: 0.2em;"><use xlink:href="${iconName}"></use></svg>`;
         return {
-            type: 'unicode',
+            type: 'svg',
             dom: dom,
-            code: code
+            code: iconName
         }
     }
 
@@ -116,11 +116,13 @@ export default class LinkIconPlugin extends siyuan.Plugin {
     Listener = this.listeners.bind(this);
 
     config = {
-        InsertDocRefIcon: true,
-        InsertDocLinkIcon: false
+        InsertDocRefIcon: true,        // 动态锚文本图标
+        InsertStaticRefIcon: false,    // 静态锚文本图标
+        AutoFetchIcon: false
     }
 
     customIcons: { href: string, iconUrl: string }[] = []
+    iconCache = new Map<string, string>(); // 用于缓存图标
 
     async onload() {
         this.initUI();
@@ -136,6 +138,12 @@ export default class LinkIconPlugin extends siyuan.Plugin {
                 }
             }
         }
+
+        // 启动时自动去重
+        if (this.deduplicateIcons()) {
+            console.log("Icons deduplicated on startup");
+        }
+
         this.customIcons.forEach(icon => {
             dynamicStyle.addIcon(icon.href, icon.iconUrl, false);
         });
@@ -148,13 +156,69 @@ export default class LinkIconPlugin extends siyuan.Plugin {
         dynamicStyle.clearStyle();
     }
 
+    // 添加图标去重函数
+    deduplicateIcons(): boolean {
+        const uniqueIcons: typeof this.customIcons = [];
+        const seen = new Set<string>();
+
+        for (const icon of this.customIcons) {
+            const key = `${icon.href}-${icon.iconUrl}`;
+            if (!seen.has(key)) {
+                seen.add(key);
+                uniqueIcons.push(icon);
+            }
+        }
+
+        if (uniqueIcons.length !== this.customIcons.length) {
+            this.customIcons = uniqueIcons;
+            this.saveData(customIconsFile, this.customIcons);
+            return true;
+        }
+        return false;
+    }
+
+    // 添加获取图标API函数
+    async fetchIconFromAPIs(domain: string): Promise<string | null> {
+        // 检查缓存
+        if (this.iconCache.has(domain)) {
+            return this.iconCache.get(domain)!;
+        }
+
+        const apis = [
+            `https://favicon.im/${domain}`,
+            `https://www.google.com/s2/favicons?domain=${domain}`,
+            `https://icons.duckduckgo.com/ip3/${domain}.ico`,
+        ];
+
+        for (const api of apis) {
+            try {
+                const response = await fetch(api, {
+                    method: "HEAD",
+                    signal: AbortSignal.timeout(5000),
+                });
+                if (response.ok) {
+                    this.iconCache.set(domain, api);
+                    return api;
+                }
+            } catch (error) {
+                console.warn(`Failed to fetch icon from ${api}:`, error);
+                continue;
+            }
+        }
+
+        return null;
+    }
+
     initUI() {
         const inputDocRef = document.createElement('input');
         inputDocRef.type = 'checkbox';
         inputDocRef.className = "b3-switch fn__flex-center";
-        const inputDocLink = document.createElement('input');
-        inputDocLink.type = 'checkbox';
-        inputDocLink.className = "b3-switch fn__flex-center";
+        const inputStaticRef = document.createElement('input');
+        inputStaticRef.type = 'checkbox';
+        inputStaticRef.className = "b3-switch fn__flex-center";
+        const autoFetch = document.createElement('input');
+        autoFetch.type = 'checkbox';
+        autoFetch.className = "b3-switch fn__flex-center";
         const uploadBtn = document.createElement('button');
         uploadBtn.className = "b3-button fn__size200";
         uploadBtn.textContent = this.i18n.upload;
@@ -187,14 +251,14 @@ export default class LinkIconPlugin extends siyuan.Plugin {
                 },
                 () => {
                     dialog.destroy();
-                }
+                },
+                this
             );
             const dialog = simpleDialog({
                 title: this.i18n.manage,
                 ele: ele,
                 width: '400px',
             });
-
         });
 
         this.setting = new siyuan.Setting({
@@ -202,7 +266,8 @@ export default class LinkIconPlugin extends siyuan.Plugin {
             height: '500px',
             confirmCallback: () => {
                 this.config.InsertDocRefIcon = inputDocRef.checked;
-                this.config.InsertDocLinkIcon = inputDocLink.checked;
+                this.config.InsertStaticRefIcon = inputStaticRef.checked;
+                this.config.AutoFetchIcon = autoFetch.checked;
                 this.saveData(ConfigFile, this.config);
             }
         });
@@ -215,36 +280,128 @@ export default class LinkIconPlugin extends siyuan.Plugin {
             },
         });
         this.setting.addItem({
-            title: this.i18n.InputDocLink.title,
-            description: this.i18n.InputDocLink.description,
+            title: this.i18n.InputStaticRef.title,
+            description: this.i18n.InputStaticRef.description,
             createActionElement: () => {
-                inputDocLink.checked = this.config.InsertDocLinkIcon;
-                return inputDocLink;
+                inputStaticRef.checked = this.config.InsertStaticRefIcon;
+                return inputStaticRef;
+            },
+        });
+        this.setting.addItem({
+            title: this.i18n.AutoFetchIcon.title,
+            description: this.i18n.AutoFetchIcon.description,
+            createActionElement: () => {
+                autoFetch.checked = this.config.AutoFetchIcon;
+                return autoFetch;
             },
         });
         this.setting.addItem({
             title: this.i18n.upload,
-            // description: '上传自定义的 svg 图标或图片文件',
             createActionElement: () => {
                 return uploadBtn;
             }
         });
         this.setting.addItem({
             title: this.i18n.manage,
-            // description: '查看并管理所有自定义的图标',
             createActionElement: () => {
                 return manageBtn;
             }
         });
     }
 
-    private onCustomIconUpload(href: string, iconUrl: string) {
+    private async onCustomIconUpload(href: string, iconUrl: string) {
         console.debug(`Upload custom icon: ${href} -> ${iconUrl}`);
+
+        // 检查是否已存在相同域名的图标
+        const existingIconIndex = this.customIcons.findIndex(
+            (icon) => icon.href === href
+        );
+        if (existingIconIndex !== -1) {
+            // 如果已存在，先移除旧的图标文件
+            const oldIconUrl = this.customIcons[existingIconIndex].iconUrl;
+            if (oldIconUrl.startsWith("/public/custom-link-icons/")) {
+                try {
+                    await fetch("/api/file/removeFile", {
+                        method: "POST",
+                        body: JSON.stringify({
+                            path: `/data${oldIconUrl}`,
+                        }),
+                    });
+                } catch (error) {
+                    console.warn("Failed to remove old icon:", error);
+                }
+            }
+            // 从数组中移除旧图标
+            this.customIcons.splice(existingIconIndex, 1);
+        }
+
+        // 如果是URL，需要先下载图标
+        if (iconUrl.startsWith("http")) {
+            try {
+                const response = await fetch(iconUrl);
+                if (!response.ok)
+                    throw new Error(`Failed to fetch icon: ${response.statusText}`);
+
+                const blob = await response.blob();
+
+                // 创建canvas来转换图片格式为PNG
+                const img = new Image();
+                const canvas = document.createElement("canvas");
+                const ctx = canvas.getContext("2d")!;
+
+                // 等待图片加载
+                await new Promise<void>((resolve, reject) => {
+                    img.onload = () => resolve();
+                    img.onerror = reject;
+                    img.src = URL.createObjectURL(blob);
+                });
+
+                // 设置canvas大小
+                canvas.width = img.width;
+                canvas.height = img.height;
+
+                // 绘制图片
+                ctx.drawImage(img, 0, 0);
+
+                // 转换为PNG格式
+                const pngBlob = await new Promise<Blob>((resolve) =>
+                    canvas.toBlob((blob) => resolve(blob!), "image/png")
+                );
+
+                // 生成文件名
+                const fileName = `${href.replace(/[^\w.-]/g, "_")}.png`;
+                const iconPath = `/data/public/custom-link-icons/${fileName}`;
+
+                // 使用思源API保存文件
+                const formData = new FormData();
+                formData.append("path", iconPath);
+                formData.append("file", pngBlob, fileName);
+                formData.append("isDir", "false");
+                formData.append("modTime", Date.now().toString());
+
+                const saveResponse = await fetch("/api/file/putFile", {
+                    method: "POST",
+                    body: formData,
+                });
+
+                if (!saveResponse.ok) {
+                    const result = await saveResponse.json();
+                    throw new Error(
+                        `Failed to save icon: ${result.msg || "Unknown error"}`
+                    );
+                }
+
+                // 更新图标URL为本地路径
+                iconUrl = `/public/custom-link-icons/${fileName}`;
+            } catch (error) {
+                console.error("Error saving icon:", error);
+                return;
+            }
+        }
+
         dynamicStyle.addIcon(href, iconUrl);
         this.customIcons.push({ href, iconUrl });
         this.saveData(customIconsFile, this.customIcons);
-        // Assume it is implemented by others
-        // No need to complete this function
     }
 
     async listeners(event: TEventLoadedProtyle) {
@@ -257,24 +414,73 @@ export default class LinkIconPlugin extends siyuan.Plugin {
         }
 
         if (this.config.InsertDocRefIcon) {
-            let ref_list = doc.querySelectorAll("span[data-type='block-ref']");
-            ref_list.forEach(async (element) => {
+            // 处理动态锚文本（data-subtype="d"）
+            let dynamic_ref_list = doc.querySelectorAll("span[data-type='block-ref'][data-subtype='d']");
+            dynamic_ref_list.forEach(async (element) => {
                 let block_id = element.attributes["data-id"].value;
                 this.insertDocIconBefore(element, block_id);
             });
         }
 
-        if (this.config.InsertDocLinkIcon) {
-            let url_list = doc.querySelectorAll("span[data-type=a][data-href^=siyuan]");
-            url_list.forEach(async (element) => {
-                let data_href = element.attributes["data-href"].value;
-                const pattern = new RegExp("siyuan:\\/\\/blocks\\/(.*)");
-                const result = data_href.match(pattern);
-                if (result) {
-                    const block_id = result[1];
-                    this.insertDocIconBefore(element, block_id);
-                }
+        if (this.config.InsertStaticRefIcon) {
+            // 处理静态锚文本（data-subtype="s"）
+            let static_ref_list = doc.querySelectorAll("span[data-type='block-ref'][data-subtype='s']");
+            static_ref_list.forEach(async (element) => {
+                let block_id = element.attributes["data-id"].value;
+                this.insertDocIconBefore(element, block_id);
             });
+        }
+
+        // 处理自动获取外链图标 - 使用CSS样式批量处理
+        if (this.config.AutoFetchIcon) {
+            const domainMap = new Map<string, HTMLElement[]>();
+            const linkElements = doc.querySelectorAll(
+                "span[data-type=a]:not([data-href^=siyuan])"
+            );
+
+            // 收集所有域名
+            for (const element of linkElements) {
+                const href = element.attributes["data-href"]?.value;
+                if (!href) continue;
+
+                try {
+                    const urlObj = new URL(href);
+                    const domain = urlObj.hostname;
+
+                    if (!domainMap.has(domain)) {
+                        domainMap.set(domain, []);
+                    }
+                    domainMap.get(domain)!.push(element as HTMLElement);
+                } catch (error) {
+                    console.warn(`Failed to parse URL ${href}:`, error);
+                }
+            }
+
+            // 批量处理每个域名
+            for (const [domain, elements] of domainMap.entries()) {
+                const existingIcon = this.customIcons.find(
+                    (icon) => icon.href === domain
+                );
+
+                if (existingIcon) {
+                    // 如果已有图标，直接添加到CSS样式
+                    dynamicStyle.addIcon(domain, existingIcon.iconUrl, false);
+                } else {
+                    // 如果没有图标，尝试获取
+                    const iconUrl = await this.fetchIconFromAPIs(domain);
+                    if (iconUrl) {
+                        const isStillMissing = !this.customIcons.some(
+                            (icon) => icon.href === domain
+                        );
+                        if (isStillMissing) {
+                            await this.onCustomIconUpload(domain, iconUrl);
+                        }
+                    }
+                }
+            }
+
+            // 批量刷新CSS样式
+            dynamicStyle.flushStyle();
         }
     }
 
@@ -283,28 +489,67 @@ export default class LinkIconPlugin extends siyuan.Plugin {
      * @param {HTMLSpanElement} element Span element
      */
     async insertDocIconBefore(element, block_id) {
-        let previes_sibling = element.previousElementSibling;
-        //如果前面的 span 元素是我们自定义插入的 icon, 就直接退出不管
-        //不过实测由于思源会把自定义的 class 删掉, 所以这行逻辑没啥卵用...
-        if (previes_sibling !== null && previes_sibling?.classList?.contains(ICON_CLASS)) {
+        // 检查元素是否已经有图标属性
+        if (element.hasAttribute('data-icon-name')) {
             return false;
         }
-        let previous_txt = previes_sibling?.innerText;
-        if (isUnicodeEmoji(previous_txt)) {
-            return true;
-        }
-
-        // let block_id = element.attributes["data-id"].value;
+        
+        // 获取文档图标
         let result = await queryDocIcon(block_id);
         if (result === null) {
             return false;
         }
-        //思源有可能把 icon 的 span 元素保留了下来, 所以如果发现前面的 element 就是 icon, 就不需要再次插入
-        if (result.type === 'unicode' && result.code === previous_txt?.trim()) {
-            previes_sibling.classList.add(ICON_CLASS);
-            return true;
+
+        // 确保样式元素存在
+        const styleElement = document.head.querySelector('style#plugin-link-icon-dynamic') || 
+                            (() => {
+                                const style = document.createElement('style');
+                                style.id = 'plugin-link-icon-dynamic';
+                                document.head.appendChild(style);
+                                return style;
+                            })();
+
+        if (!(styleElement instanceof HTMLStyleElement)) {
+            return false;
         }
-        element.insertAdjacentHTML('beforebegin', result.dom);
+
+        // 为元素生成唯一ID，用于CSS选择器
+        const iconId = `icon-${Date.now()}-${Math.floor(Math.random() * 1000)}`;
+        element.setAttribute('data-icon-id', iconId);
+
+        // 添加数据属性，CSS将使用这些属性来显示图标
+        if (result.type === 'svg' && result.code.startsWith('#icon')) {
+            // 思源内置图标
+            element.setAttribute('data-icon-name', result.code);
+        } else if (result.type === 'svg' || result.type === 'image') {
+            // Emoji或其他图像
+            const iconPath = result.code || (result.dom.match(/src=['"](.*?)['"]/)?.[1] || '');
+            element.setAttribute('data-icon-name', 'custom');
+
+            // 为自定义图标生成CSS
+            const cssRule = `.protyle-wysiwyg [data-node-id] span[data-type='block-ref'][data-icon-id="${iconId}"]::before { 
+                background-image: url("/emojis/${iconPath}");
+                vertical-align: text-bottom;
+            }`;
+
+            // 添加CSS规则
+            styleElement.textContent = `${styleElement.textContent || ''}\n${cssRule}`;
+        } else if (result.type === 'unicode') {
+            // Unicode表情符号
+            element.setAttribute('data-icon-name', 'emoji');
+
+            // 为Unicode emoji生成CSS
+            const cssRule = `.protyle-wysiwyg [data-node-id] span[data-type='block-ref'][data-icon-id="${iconId}"]::before { 
+                content: "${result.code}"; 
+                background-image: none;
+                font-family: 'Apple Color Emoji', 'Segoe UI Emoji', 'Noto Color Emoji', sans-serif;
+                vertical-align: baseline;
+            }`;
+
+            // 添加CSS规则
+            styleElement.textContent = `${styleElement.textContent || ''}\n${cssRule}`;
+        }
+        
         return true;
     }
 }

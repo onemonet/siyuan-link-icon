@@ -1,11 +1,19 @@
 {
     "InputDocRef": {
-        "title": "Insert doc ref icon",
-        "description": "Insert icon before a document ref [[ref]]"
+        "title": "Dynamic anchor text icon",
+        "description": "Insert icon before dynamic document references [[Doc Name]]"
+    },
+    "InputStaticRef": {
+        "title": "Static anchor text icon",
+        "description": "Insert icon before static document references [[Doc Name]]"
     },
     "InputDocLink": {
         "title": "Insert doc link icon",
         "description": "Insert icon before a document link [](siyuan://)"
+    },
+    "AutoFetchIcon": {
+        "title": "Auto fetch link icons",
+        "description": "Automatically fetch and cache website icons for external links"
     },
     "upload": "Upload Custom Icon",
     "manage": "Manage Custom Icons"

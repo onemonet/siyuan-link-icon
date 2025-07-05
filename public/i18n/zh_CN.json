@@ -1,11 +1,19 @@
 {
     "InputDocRef": {
-        "title": "文档引用图标",
-        "description": "在文档引用 [[ref]] 前插入图标"
+        "title": "动态锚文本图标",
+        "description": "在动态引用 [[文档名称]] 前插入图标"
+    },
+    "InputStaticRef": {
+        "title": "静态锚文本图标", 
+        "description": "在静态引用 [[文档名称]] 前插入图标"
     },
     "InputDocLink": {
         "title": "文档链接图标",
         "description": "在文档引用 [](siyuan://) 前插入图标"
+    },
+    "AutoFetchIcon": {
+        "title": "自动获取外链图标",
+        "description": "自动为外部链接获取并缓存网站图标"
     },
     "upload": "上传自定义图标",
     "manage": "管理自定义图标"

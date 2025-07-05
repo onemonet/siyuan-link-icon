@@ -209,7 +209,8 @@ export const uploadCustomIcon = (uploadCallback: (hrefName: Href, url: IconUrl) 
 export const manageCustomIcons = (
     customIcons: { href: string; iconUrl: string }[],
     updatedCustomIcons: (customIcons: { href: string; iconUrl: string }[]) => void,
-    closeCallback: () => void
+    closeCallback: () => void,
+    pluginInstance?: any
 ): HTMLElement => {
     const container = document.createElement('div');
     container.className = 'custom-icon-manager';
@@ -222,9 +223,79 @@ export const manageCustomIcons = (
         flex: 1,
         padding: '0 20px',
         gap: '15px',
+        height: '600px', // 设置固定高度为600px
+        minHeight: '600px', // 设置最小高度为600px
     });
 
+    // 添加搜索框
+    const searchContainer = document.createElement('div');
+    Object.assign(searchContainer.style, {
+        display: 'flex',
+        alignItems: 'center',
+        gap: '10px',
+        marginBottom: '10px',
+    });
+
+    const searchLabel = document.createElement('label');
+    searchLabel.textContent = '搜索:';
+    searchLabel.style.fontWeight = 'bold';
+
+    const searchInput = document.createElement('input');
+    searchInput.type = 'text';
+    searchInput.placeholder = '输入域名或关键词... (支持模糊搜索)';
+    Object.assign(searchInput.style, {
+        flex: 1,
+        padding: '8px 12px',
+        border: '1px solid #ccc',
+        borderRadius: '4px',
+        fontSize: '14px',
+    });
+
+    searchContainer.appendChild(searchLabel);
+    searchContainer.appendChild(searchInput);
+    container.appendChild(searchContainer);
+
+    // 添加统计信息
+    const statsContainer = document.createElement('div');
+    Object.assign(statsContainer.style, {
+        display: 'flex',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginBottom: '10px',
+        fontSize: '12px',
+        color: '#666',
+    });
+
+    const totalCount = document.createElement('span');
+    const visibleCount = document.createElement('span');
+    
+    statsContainer.appendChild(totalCount);
+    statsContainer.appendChild(visibleCount);
+    container.appendChild(statsContainer);
+
     const deleteList: string[] = [];
+
+    // 创建一个可滚动的容器
+    const iconListContainer = document.createElement('div');
+    Object.assign(iconListContainer.style, {
+        overflowY: 'auto',
+        maxHeight: '450px', // 在600px容器中留出空间给搜索框、统计信息和保存按钮
+        minHeight: '200px', // 设置最小高度
+        display: 'flex',
+        flexDirection: 'column',
+        gap: '0px', // 移除gap，因为我们在每个item中已经设置了gap
+        marginBottom: '15px',
+        position: 'relative', // 添加相对定位
+        flex: 1, // 让滚动容器占据剩余空间
+    });
+    container.appendChild(iconListContainer);
+
+    // 虚拟滚动相关变量
+    const ITEM_HEIGHT = 35; // 每个图标项的高度（包含gap）
+    const BUFFER_SIZE = 10; // 缓冲区大小
+    let scrollTop = 0;
+    let filteredIcons: typeof customIcons = [];
+    let visibleRange = { start: 0, end: 0 };
 
     const createIconElement = (icon: { href: string; iconUrl: string }, index: number) => {
         const iconElement = document.createElement('div');
@@ -232,13 +303,14 @@ export const manageCustomIcons = (
         Object.assign(iconElement.style, {
             display: 'flex',
             gap: '15px',
-            // marginBottom: '10px',
             alignItems: 'center',
+            height: '35px', // 固定高度
+            minHeight: '35px', // 确保最小高度
         });
         iconElement.innerHTML = `
-            <img src="${icon.iconUrl}" alt="Custom Icon" class="custom-icon-preview" style="height: 25px;">
-            <input type="text" class="custom-icon-href" value="${icon.href}" style="flex: 1;">
-            <button class="custom-icon-delete b3-button b3-button--outline">Delete</button>
+            <img src="${icon.iconUrl}" alt="Custom Icon" class="custom-icon-preview" style="height: 25px; width: 25px; object-fit: contain;">
+            <input type="text" class="custom-icon-href" value="${icon.href}" style="flex: 1; padding: 4px 8px; border: 1px solid #ddd; border-radius: 3px;">
+            <button class="custom-icon-delete b3-button b3-button--outline" style="padding: 4px 8px; font-size: 12px;">Delete</button>
         `;
 
         const hrefInput = iconElement.querySelector('.custom-icon-href') as HTMLInputElement;
@@ -246,27 +318,125 @@ export const manageCustomIcons = (
 
         hrefInput.addEventListener('change', () => {
             customIcons[index].href = hrefInput.value;
-            // updatedCustomIcons([...customIcons]);
         });
 
         deleteButton.addEventListener('click', () => {
             const icon = customIcons[index];
             deleteList.push(icon.iconUrl);
             customIcons.splice(index, 1);
-            iconElement.remove();
-            // updatedCustomIcons([...customIcons]);
+            // 重新渲染以更新索引
+            renderIcons(searchInput.value);
         });
 
         return iconElement;
     };
 
-    const renderIcons = () => {
-        container.innerHTML = '';
-        customIcons.forEach((icon, index) => {
-            container.appendChild(createIconElement(icon, index));
-        });
+    const updateVisibleRange = () => {
+        const containerHeight = iconListContainer.clientHeight;
+        const start = Math.floor(scrollTop / ITEM_HEIGHT);
+        const end = Math.min(start + Math.ceil(containerHeight / ITEM_HEIGHT) + BUFFER_SIZE, filteredIcons.length);
+        
+        visibleRange = { start, end };
     };
 
+    const renderVisibleIcons = () => {
+        iconListContainer.innerHTML = '';
+        
+        // 添加顶部占位符
+        if (visibleRange.start > 0) {
+            const topSpacer = document.createElement('div');
+            Object.assign(topSpacer.style, {
+                height: `${visibleRange.start * ITEM_HEIGHT}px`,
+                flexShrink: '0',
+                width: '100%',
+            });
+            iconListContainer.appendChild(topSpacer);
+        }
+
+        // 渲染可见的图标
+        for (let i = visibleRange.start; i < visibleRange.end; i++) {
+            const icon = filteredIcons[i];
+            const originalIndex = customIcons.indexOf(icon);
+            const iconElement = createIconElement(icon, originalIndex);
+            iconListContainer.appendChild(iconElement);
+        }
+
+        // 添加底部占位符
+        if (visibleRange.end < filteredIcons.length) {
+            const bottomSpacer = document.createElement('div');
+            Object.assign(bottomSpacer.style, {
+                height: `${(filteredIcons.length - visibleRange.end) * ITEM_HEIGHT}px`,
+                flexShrink: '0',
+                width: '100%',
+            });
+            iconListContainer.appendChild(bottomSpacer);
+        }
+    };
+
+    const renderIcons = (filterText: string = '') => {
+        // 显示搜索中状态（当图标数量较多时）
+        if (filterText && customIcons.length > 100) {
+            totalCount.textContent = `总计: ${customIcons.length} 个图标`;
+            visibleCount.textContent = '搜索中...';
+        }
+
+        // 使用setTimeout让UI有机会更新搜索状态
+        setTimeout(() => {
+            // 智能搜索：支持多个关键词
+            const searchTerms = filterText.toLowerCase().split(/\s+/).filter(term => term.length > 0);
+            
+            if (searchTerms.length === 0) {
+                // 无搜索条件，显示所有图标
+                filteredIcons = [...customIcons];
+            } else {
+                // 过滤图标：所有搜索词都必须匹配
+                filteredIcons = customIcons.filter(icon => {
+                    const href = icon.href.toLowerCase();
+                    return searchTerms.every(term => href.includes(term));
+                });
+            }
+
+            // 更新统计信息
+            totalCount.textContent = `总计: ${customIcons.length} 个图标`;
+            visibleCount.textContent = `显示: ${filteredIcons.length} 个图标`;
+
+            // 重置滚动位置
+            scrollTop = 0;
+            iconListContainer.scrollTop = 0;
+
+            // 更新可见范围
+            updateVisibleRange();
+            
+            // 渲染可见图标
+            renderVisibleIcons();
+        }, 0);
+    };
+
+    // 滚动事件处理
+    let scrollTimeout: number;
+    iconListContainer.addEventListener('scroll', () => {
+        scrollTop = iconListContainer.scrollTop;
+        
+        // 防抖处理
+        clearTimeout(scrollTimeout);
+        scrollTimeout = window.setTimeout(() => {
+            updateVisibleRange();
+            renderVisibleIcons();
+        }, 16); // 约60fps
+    });
+
+    // 搜索功能 - 添加防抖
+    let searchTimeout: number;
+    searchInput.addEventListener('input', (e) => {
+        const filterText = (e.target as HTMLInputElement).value;
+        
+        clearTimeout(searchTimeout);
+        searchTimeout = window.setTimeout(() => {
+            renderIcons(filterText);
+        }, 300); // 300ms防抖
+    });
+
+    // 初始渲染
     renderIcons();
 
     const saveButton = document.createElement('button');
