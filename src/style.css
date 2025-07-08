@@ -98,7 +98,7 @@
     position: relative;
     background-repeat: no-repeat;
     background-size: 1em 1em;
-    top: 0.2em !important;
+    top: 0.1em !important;
     width: 1em;
     height: 1em;
     margin-right: 0.2em !important;
@@ -110,7 +110,7 @@
 .protyle-wysiwyg [data-node-id] a[href^="es://"]::before,
 .b3-typography a[href^="es://"]::before {
     content: "";
-    background-image: url('plugins/link-icon/icon/everything.svg');
+    background-image: url('plugins/siyuan-link-icon/icon/everything.svg');
 }
 
 .protyle-wysiwyg [data-node-id] span[data-type~='a'][data-href^="zotero://"]:not(:empty)::before,
@@ -118,7 +118,7 @@
 .protyle-wysiwyg [data-node-id] a[href^="zotero://"]::before,
 .b3-typography a[href^="zotero://"]::before {
     content: "";
-    background-image: url('plugins/link-icon/icon/zotero.ico');
+    background-image: url('plugins/siyuan-link-icon/icon/zotero.ico');
 }
 
 .protyle-wysiwyg [data-node-id] span[data-type~='a'][data-href^="bookxnotepro://"]:not(:empty)::before,
@@ -126,7 +126,7 @@
 .protyle-wysiwyg [data-node-id] a[href^="bookxnotepro://"]::before,
 .b3-typography a[href^="bookxnotepro://"]::before {
     content: "";
-    background-image: url('plugins/link-icon/icon/bookxnote.ico');
+    background-image: url('plugins/siyuan-link-icon/icon/bookxnote.ico');
 }
 
 /* 文件系统图标 */
@@ -135,7 +135,7 @@
 .protyle-wysiwyg [data-node-id] a[href^="file://"][data-href $="/"]::before,
 .b3-typography a[href^="file://"][data-href $="/"]::before {
     content: "";
-    background-image: url('plugins/link-icon/icon/folder.svg');
+    background-image: url('plugins/siyuan-link-icon/icon/folder.svg');
     opacity: 0.9;
     background-size: 1.2em 1.2em;
     filter: hue-rotate(0.9turn);
@@ -149,7 +149,7 @@
 .protyle-wysiwyg [data-node-id] a[href^="http://127.0.0.1:6806/assets/"]::before,
 .protyle-wysiwyg [data-node-id] a[href^="assets/"]::before {
     content: "";
-    background-image: url('plugins/link-icon/icon/unknown.svg');
+    background-image: url('plugins/siyuan-link-icon/icon/unknown.svg');
 }
 
 .protyle-wysiwyg [data-node-id] span[data-type~='a'][data-href ^="assets"][data-href $="/"]:not(:empty)::before,
@@ -158,7 +158,7 @@
 .protyle-wysiwyg [data-node-id] a[href^="assets/"][href $="/"]::before,
 .protyle-wysiwyg [data-node-id] a[href^="http://127.0.0.1:6806/assets/"][href $="/"]::before {
     content: "";
-    background-image: url('plugins/link-icon/icon/assets.svg');
+    background-image: url('plugins/siyuan-link-icon/icon/assets.svg');
 }
 
 /* 文件类型图标 */
@@ -179,7 +179,7 @@
 .protyle-wysiwyg [data-node-id] a[href $=".gz"]::before,
 .b3-typography a[href ^="assets/"][href $=".gz"]::before {
     content: "";
-    background-image: url('plugins/link-icon/icon/compress.svg');
+    background-image: url('plugins/siyuan-link-icon/icon/compress.svg');
 }
 
 .protyle-wysiwyg [data-node-id] span[data-type~='a'][data-href $=".pdf"]:not(:empty)::before,
@@ -192,7 +192,7 @@
 .b3-typography [href^="assets/"][href*=".pdf?page"]:before
 {
     content: "";
-    background-image: url('plugins/link-icon/icon/pdf.svg');
+    background-image: url('plugins/siyuan-link-icon/icon/pdf.svg');
 }
 
 .protyle-wysiwyg [data-node-id] span[data-type~='a'][data-href $=".mp4"]:not(:empty)::before,
@@ -208,7 +208,7 @@
 .protyle-wysiwyg [data-node-id] a[href $=".mkv"]::before,
 .b3-typography [href ^="assets/"][href $=".mkv"]::before {
     content: "";
-    background-image: url('plugins/link-icon/icon/videos.svg');
+    background-image: url('plugins/siyuan-link-icon/icon/videos.svg');
 }
 
 .protyle-wysiwyg [data-node-id] span[data-type~='a'][data-href $=".xlsx"]:not(:empty)::before,
@@ -220,7 +220,7 @@
 .protyle-wysiwyg [data-node-id] a[href $=".xls"]::before,
 .b3-typography [href ^="assets/"][href $=".xls"]::before {
     content: "";
-    background-image: url('plugins/link-icon/icon/excel_icon.svg');
+    background-image: url('plugins/siyuan-link-icon/icon/excel_icon.svg');
 }
 
 .protyle-wysiwyg [data-node-id] span[data-type~='a'][data-href $=".pptx"]:not(:empty)::before,
@@ -232,7 +232,7 @@
 .protyle-wysiwyg [data-node-id] a[href $=".ppt"]::before,
 .b3-typography [href ^="assets/"][href $=".ppt"]::before {
     content: "";
-    background-image: url('plugins/link-icon/icon/powerpoint_icon.svg');
+    background-image: url('plugins/siyuan-link-icon/icon/powerpoint_icon.svg');
 }
 
 .protyle-wysiwyg [data-node-id] span[data-type~='a'][data-href $=".docx"]:not(:empty)::before,
@@ -244,7 +244,7 @@
 .protyle-wysiwyg [data-node-id] a[href $=".doc"]::before,
 .b3-typography [href ^="assets/"][href $=".doc"]::before {
     content: "";
-    background-image: url('plugins/link-icon/icon/word_icon.svg');
+    background-image: url('plugins/siyuan-link-icon/icon/word_icon.svg');
 }
 
 .protyle-wysiwyg [data-node-id] span[data-type~='a'][data-href $=".txt"]:not(:empty)::before,
@@ -252,7 +252,7 @@
 .protyle-wysiwyg [data-node-id] a[href $=".txt"]::before,
 .b3-typography [href ^="assets/"][href $=".txt"]::before {
     content: "";
-    background-image: url('plugins/link-icon/icon/txt.svg');
+    background-image: url('plugins/siyuan-link-icon/icon/txt.svg');
 }
 
 .protyle-wysiwyg [data-node-id] span[data-type~='a'][data-href $=".py"]:not(:empty)::before,
@@ -260,7 +260,7 @@
 .protyle-wysiwyg [data-node-id] a[href $=".py"]::before,
 .b3-typography [href ^="assets/"][href $=".py"]::before {
     content: "";
-    background-image: url('plugins/link-icon/icon/python_icon.svg');
+    background-image: url('plugins/siyuan-link-icon/icon/python_icon.svg');
 }
 
 .protyle-wysiwyg [data-node-id] span[data-type~='a'][data-href $=".R"]:not(:empty)::before,
@@ -273,7 +273,7 @@
 .protyle-wysiwyg [data-node-id] a[href $=".r"]::before,
 .b3-typography [href ^="assets/"][href $=".r"]::before {
     content: "";
-    background-image: url('plugins/link-icon/icon/r_lang.svg');
+    background-image: url('plugins/siyuan-link-icon/icon/r_lang.svg');
 }
 
 .protyle-wysiwyg [data-node-id] span[data-type~='a'][data-href $=".js"]:not(:empty)::before,
@@ -281,7 +281,7 @@
 .protyle-wysiwyg [data-node-id] a[href $=".js"]::before,
 .b3-typography [href ^="assets/"][href $=".js"]::before {
     content: "";
-    background-image: url('plugins/link-icon/icon/js.svg');
+    background-image: url('plugins/siyuan-link-icon/icon/js.svg');
 }
 
 .protyle-wysiwyg [data-node-id] span[data-type~='a'][data-href $=".html"]:not(:empty)::before,
@@ -289,7 +289,7 @@
 .protyle-wysiwyg [data-node-id] a[href $=".html"]::before,
 .b3-typography [href ^="assets/"][href $=".html"]::before {
     content: "";
-    background-image: url('plugins/link-icon/icon/html.svg');
+    background-image: url('plugins/siyuan-link-icon/icon/html.svg');
 }
 
 .protyle-wysiwyg [data-node-id] span[data-type~='a'][data-href $=".css"]:not(:empty)::before,
@@ -297,7 +297,7 @@
 .protyle-wysiwyg [data-node-id] a[href $=".css"]::before,
 .b3-typography [href ^="assets/"][href $=".css"]::before {
     content: "";
-    background-image: url('plugins/link-icon/icon/css.svg');
+    background-image: url('plugins/siyuan-link-icon/icon/css.svg');
 }
 
 .protyle-wysiwyg [data-node-id] span[data-type~='a'][data-href $=".md"]:not(:empty)::before,
@@ -305,7 +305,7 @@
 .protyle-wysiwyg [data-node-id] a[href $=".md"]::before,
 .b3-typography [href ^="assets/"][href $=".md"]::before {
     content: "";
-    background-image: url('plugins/link-icon/icon/logo-markdown.svg');
+    background-image: url('plugins/siyuan-link-icon/icon/logo-markdown.svg');
 }
 
 .protyle-wysiwyg [data-node-id] span[data-type~='a'][data-href $=".ipynb"]:not(:empty)::before,
@@ -313,7 +313,7 @@
 .protyle-wysiwyg [data-node-id] a[href $=".ipynb"]::before,
 .b3-typography [href ^="assets/"][href $=".ipynb"]::before {
     content: "";
-    background-image: url('plugins/link-icon/icon/jupyter.svg');
+    background-image: url('plugins/siyuan-link-icon/icon/jupyter.svg');
 }
 
 /* 备注链接 */
@@ -322,7 +322,7 @@
 .protyle-wysiwyg [data-node-id] a[href^="备注"]::before,
 .b3-typography a[href^="备注"]::before {
     content: "";
-    background-image: url('plugins/link-icon/icon/memo.svg');
+    background-image: url('plugins/siyuan-link-icon/icon/memo.svg');
 }
 
 /* 外部链接基础样式 */
@@ -331,5 +331,5 @@
 .b3-typography a[href ^="http"]::before,
 .protyle-wysiwyg [data-node-id] a[href^="http"]::before {
     content: "";
-    background-image: url('plugins/link-icon/icon/net2.svg');
+    background-image: url('plugins/siyuan-link-icon/icon/net2.svg');
 }
